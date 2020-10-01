@@ -1501,8 +1501,7 @@ public class QueryIterator extends QueryOptions implements YieldingKeyValueItera
     }
     
     protected UniqueTransform getUniqueTransform() {
-        if (uniqueTransform == null &&
-                getUniqueFields() != null & !getUniqueFields().isEmpty()) {
+        if (uniqueTransform == null && getUniqueFields() != null & !getUniqueFields().isEmpty()) {
             synchronized (getUniqueFields()) {
                 if (uniqueTransform == null) {
                     uniqueTransform = new UniqueTransform(getUniqueFields());

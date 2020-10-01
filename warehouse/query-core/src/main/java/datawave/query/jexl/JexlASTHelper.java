@@ -749,7 +749,9 @@ public class JexlASTHelper {
     }
     
     private static List<JexlNode> getLiterals(JexlNode node, List<JexlNode> literals) {
-        if (isLiteral(node)) {
+        if (node instanceof ASTAssignment) {
+            // Don't get literals under assignments as they are only used for QueryPropertyMarkers
+        } else if (isLiteral(node)) {
             literals.add(node);
         } else {
             for (int i = 0; i < node.jjtGetNumChildren(); i++) {
@@ -777,8 +779,8 @@ public class JexlASTHelper {
     }
     
     /**
-     * Ranges: A range prior to being "tagged" must be of the form "(term1 && term2)" where term1 and term2 refer to the same field and denote two sides of the
-     * range ((LE or LT) and (GE or GT)). A tagged range is of the form "(SingleValueEvalMarkerJexlNode=true) && (term1 && term2))"
+     * Ranges: A range prior to being "tagged" must be of the form "(term1 &amp;&amp; term2)" where term1 and term2 refer to the same field and denote two sides
+     * of the range ((LE or LT) and (GE or GT)). A tagged range is of the form "(BoundedRange=true) &amp;&amp; (term1 &amp;&amp; term2))"
      */
     public static RangeFinder findRange() {
         return new RangeFinder();
