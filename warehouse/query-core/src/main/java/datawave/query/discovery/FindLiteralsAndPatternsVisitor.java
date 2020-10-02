@@ -2,11 +2,9 @@ package datawave.query.discovery;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import datawave.query.jexl.JexlASTHelper;
 import datawave.query.jexl.LiteralRange;
-import datawave.query.jexl.visitors.RangeTaggingVisitor;
 import datawave.query.jexl.visitors.TreeFlatteningRebuildingVisitor;
 import datawave.query.jexl.visitors.BaseVisitor;
 
@@ -38,7 +36,6 @@ public class FindLiteralsAndPatternsVisitor extends BaseVisitor {
      */
     public static QueryValues find(JexlNode root) {
         root = TreeFlatteningRebuildingVisitor.flatten(root);
-        root = RangeTaggingVisitor.tagRanges(root);
         FindLiteralsAndPatternsVisitor vis = new FindLiteralsAndPatternsVisitor();
         root.jjtAccept(vis, null);
         return vis.values;
