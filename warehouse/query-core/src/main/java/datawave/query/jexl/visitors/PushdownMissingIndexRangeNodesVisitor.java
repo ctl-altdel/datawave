@@ -3,6 +3,7 @@ package datawave.query.jexl.visitors;
 import datawave.query.config.IndexHole;
 import datawave.query.config.ShardQueryConfiguration;
 import datawave.query.jexl.JexlASTHelper;
+import datawave.query.jexl.nodes.BoundedRange;
 import datawave.query.jexl.nodes.IndexHoleMarkerJexlNode;
 import datawave.query.jexl.nodes.QueryPropertyMarker;
 import datawave.query.parser.JavaRegexAnalyzer;
@@ -22,6 +23,7 @@ import org.apache.log4j.Logger;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,7 +110,7 @@ public class PushdownMissingIndexRangeNodesVisitor extends RebuildingVisitor {
     @Override
     public Object visit(ASTReferenceExpression node, Object data) {
         // if not already delayed somehow
-        if (!QueryPropertyMarker.instanceOf(node, null)) {
+        if (!QueryPropertyMarkerVisitor.instanceOfAnyExcept(node, Collections.singletonList(BoundedRange.class))) {
             return super.visit(node, data);
         }
         return node;
@@ -117,7 +119,7 @@ public class PushdownMissingIndexRangeNodesVisitor extends RebuildingVisitor {
     @Override
     public Object visit(ASTReference node, Object data) {
         // if not already delayed somehow
-        if (!QueryPropertyMarker.instanceOf(node, null)) {
+        if (!QueryPropertyMarkerVisitor.instanceOfAnyExcept(node, Collections.singletonList(BoundedRange.class))) {
             return super.visit(node, data);
         }
         return node;
