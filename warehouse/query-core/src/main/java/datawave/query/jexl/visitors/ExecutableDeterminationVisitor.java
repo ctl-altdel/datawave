@@ -474,7 +474,7 @@ public class ExecutableDeterminationVisitor extends BaseVisitor {
                 output.writeLine(data + node.toString() + "( Exceeded Term Threshold ) -> " + state);
             }
         }
-        // if an ivarator the return true, else check out children
+        // if an ivarator then return true, else check out children
         else if (ExceededValueThresholdMarkerJexlNode.instanceOf(node) || ExceededOrThresholdMarkerJexlNode.instanceOf(node)) {
             state = STATE.EXECUTABLE;
             if (output != null) {
@@ -493,8 +493,10 @@ public class ExecutableDeterminationVisitor extends BaseVisitor {
             if (output != null) {
                 output.writeLine(data + node.toString() + "( delayed/eval only predicate ) -> " + state);
             }
-        } else if (BoundedRange.instanceOf(node)) {
-            state = STATE.EXECUTABLE;
+        }
+        // if we got to a bounded range, then this was expanded and is not executable against the index
+        else if (BoundedRange.instanceOf(node)) {
+            state = STATE.NON_EXECUTABLE;
             if (output != null) {
                 output.writeLine(data + node.toString() + '(' + JexlASTHelper.getIdentifierNames(BoundedRange.getBoundedRangeSource(node))
                                 + " bounded range) -> " + state);
