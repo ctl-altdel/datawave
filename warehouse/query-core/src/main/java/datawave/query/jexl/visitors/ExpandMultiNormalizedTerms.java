@@ -162,7 +162,12 @@ public class ExpandMultiNormalizedTerms extends RebuildingVisitor {
     private Object expandRangeForNormalizers(LiteralRange<?> range, JexlNode node) {
         List<BoundedRange> aliasedBounds = Lists.newArrayList();
         String field = range.getFieldName();
-        for (Type<?> normalizer : config.getQueryFieldsDatatypes().get(field)) {
+        
+        // Get all of the indexed or normalized dataTypes for the field name
+        Set<Type<?>> dataTypes = Sets.newHashSet(config.getQueryFieldsDatatypes().get(field));
+        dataTypes.addAll(config.getNormalizedFieldsDatatypes().get(field));
+        
+        for (Type<?> normalizer : dataTypes) {
             JexlNode lowerBound = range.getLowerNode(), upperBound = range.getUpperNode();
             
             JexlNode left = null;
