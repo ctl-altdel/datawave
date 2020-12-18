@@ -19,7 +19,6 @@ import datawave.query.jexl.functions.arguments.JexlArgumentDescriptor;
 import datawave.query.jexl.nodes.ExceededOrThresholdMarkerJexlNode;
 import datawave.query.jexl.nodes.ExceededTermThresholdMarkerJexlNode;
 import datawave.query.jexl.nodes.ExceededValueThresholdMarkerJexlNode;
-import datawave.query.jexl.nodes.IndexHoleMarkerJexlNode;
 import datawave.query.jexl.nodes.QueryPropertyMarker;
 import datawave.query.jexl.visitors.BaseVisitor;
 import datawave.query.jexl.visitors.JexlStringBuildingVisitor;
@@ -35,10 +34,8 @@ import datawave.webservice.query.exception.QueryException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.commons.jexl2.parser.ASTAndNode;
 import org.apache.commons.jexl2.parser.ASTAssignment;
-import org.apache.commons.jexl2.parser.ASTDelayedPredicate;
 import org.apache.commons.jexl2.parser.ASTEQNode;
 import org.apache.commons.jexl2.parser.ASTERNode;
-import org.apache.commons.jexl2.parser.ASTEvaluationOnly;
 import org.apache.commons.jexl2.parser.ASTFalseNode;
 import org.apache.commons.jexl2.parser.ASTFunctionNode;
 import org.apache.commons.jexl2.parser.ASTGENode;
@@ -340,13 +337,26 @@ public class JexlASTHelper {
     }
     
     /**
-     * Fetch the literal off of the grandchild, removing a leading {@link #IDENTIFIER_PREFIX} if present. Throws an exception if there is no literal
+     * Fetch the identifier off of the grandchild, removing a leading {@link #IDENTIFIER_PREFIX} if present. Throws an exception if there is no identifier This
+     * identifier will be deconstructed
      * 
      * @param node
-     * @return
+     * @return the deconstructed identifier
      * @throws NoSuchElementException
      */
     public static String getIdentifier(JexlNode node) throws NoSuchElementException {
+        return getIdentifier(node, true);
+    }
+    
+    /**
+     * Fetch the identifier off of the grandchild, removing a leading {@link #IDENTIFIER_PREFIX} if present. Throws an exception if there is no identifier
+     *
+     * @param node
+     * @param deconstruct
+     * @return the identifier, deconstructed if requested
+     * @throws NoSuchElementException
+     */
+    public static String getIdentifier(JexlNode node, boolean deconstruct) throws NoSuchElementException {
         if (null != node && 2 == node.jjtGetNumChildren()) {
             for (int i = 0; i < node.jjtGetNumChildren(); i++) {
                 JexlNode child = node.jjtGetChild(i);
@@ -357,7 +367,7 @@ public class JexlASTHelper {
                         
                         // If the grandchild and its image is non-null and equal to the any-field identifier
                         if (null != grandChild && grandChild instanceof ASTIdentifier) {
-                            return deconstructIdentifier(grandChild.image);
+                            return (deconstruct ? deconstructIdentifier(grandChild.image) : grandChild.image);
                         } else if (null != grandChild && grandChild instanceof ASTFunctionNode) {
                             return null;
                         }
@@ -368,7 +378,7 @@ public class JexlASTHelper {
                 }
             }
         } else if (node instanceof ASTIdentifier && node.jjtGetNumChildren() == 0) {
-            return deconstructIdentifier(node.image);
+            return deconstructIdentifier(node.image, deconstruct);
         }
         
         NotFoundQueryException qe = new NotFoundQueryException(DatawaveErrorCode.IDENTIFIER_MISSING);
@@ -1204,15 +1214,6 @@ public class JexlASTHelper {
         return nodes;
     }
     
-    protected static boolean isDelayedPredicate(JexlNode currNode) {
-        if (ASTDelayedPredicate.instanceOf(currNode) || ExceededOrThresholdMarkerJexlNode.instanceOf(currNode)
-                        || ExceededValueThresholdMarkerJexlNode.instanceOf(currNode) || ExceededTermThresholdMarkerJexlNode.instanceOf(currNode)
-                        || IndexHoleMarkerJexlNode.instanceOf(currNode) || ASTEvaluationOnly.instanceOf(currNode))
-            return true;
-        else
-            return false;
-    }
-    
     /**
      * Get the range operator nodes. If "mustBeIndexed" is true, then a config and helper must be supplied to check if the fields are indexed.
      * 
@@ -1231,7 +1232,7 @@ public class JexlASTHelper {
      */
     protected static void getRangeOperatorNodes(JexlNode root, Class<?> clz, List<JexlNode> nodes, List<JexlNode> otherNodes, Set<String> datatypeFilterSet,
                     MetadataHelper helper, List<JexlNode> nonIndexedRangeNodes, boolean includeDelayed, int maxDepth) {
-        if ((!includeDelayed && isDelayedPredicate(root)) || maxDepth == 0) {
+        if ((!includeDelayed && QueryPropertyMarkerVisitor.isDelayedPredicate(root)) || maxDepth == 0) {
             return;
         }
         for (int i = 0; i < root.jjtGetNumChildren(); i++) {
@@ -1240,7 +1241,7 @@ public class JexlASTHelper {
             // as the root, reference expression nodes, and reference nodes
             if (child.getClass().equals(clz) || child.getClass().equals(ASTReferenceExpression.class) || child.getClass().equals(ASTReference.class)) {
                 // ignore getting range nodes out of delayed expressions as they have already been processed
-                if (includeDelayed || !isDelayedPredicate(child)) {
+                if (includeDelayed || !QueryPropertyMarkerVisitor.isDelayedPredicate(child)) {
                     getRangeOperatorNodes(child, clz, nodes, otherNodes, datatypeFilterSet, helper, nonIndexedRangeNodes, includeDelayed, maxDepth - 1);
                 } else if (otherNodes != null) {
                     otherNodes.add(JexlASTHelper.rereference(child));
